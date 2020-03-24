@@ -1,4 +1,5 @@
-""" module creates the dashboard '/insights' page
+""" module creates the dashboard '/insights' page """
+
 # -*- coding: utf-8 -*-
 import dash
 import dash_table
