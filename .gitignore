@@ -125,3 +125,4 @@ dmypy.json
 yaml-output
 parser-run-utilities.py
 tools/dataset_metrics/run.py
+tools/dataset_metrics/.~lock.metrics.xlsx#
