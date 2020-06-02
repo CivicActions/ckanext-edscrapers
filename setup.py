@@ -4,7 +4,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-if sys.version_info < (3,6):
+if sys.version_info < (3,7):
     sys.exit('Sorry, Python < 3.7 is not supported')
 
 setuptools.setup(

@@ -33,8 +33,13 @@ class Dataset(Item):
     tags = Field()
     resources = Field()
     collection = Field()
+    saved_as_file = Field()
 
     def toJSON(self):
+        # dont convert the collection field to JSON
+        if self.__dict__['_values'].get('collection', None):
+            del self.__dict__['_values']['collection']
+
         return json.dumps(self, default=lambda o: o.__dict__['_values'],
                           sort_keys=False, indent=2)
 

@@ -25,7 +25,10 @@ SCRAPY_SETTINGS = {
     },
     'ITEM_PIPELINES': {
         'edscrapers.scrapers.base.pipelines.JsonWriterPipeline': 1,
-        #'edscrapers.scrapers.base.pipelines.DuplicatesPipeline': 2,
+        'edscrapers.scrapers.base.pipelines.GraphItemPipeline': 2,
+    },
+    'SPIDER_MIDDLEWARES': {
+        'edscrapers.scrapers.base.middlewares.GraphMiddleWare': 1000
     },
     'SCHEDULER_PRIORITY_QUEUE': 'scrapy.pqueues.DownloaderAwarePriorityQueue',
     # 'REDIRECT_ENABLED': False,
@@ -40,4 +43,5 @@ SCRAPY_SETTINGS = {
 
     'AUTOTHROTTLE_ENABLED': True,
     'LOG_LEVEL': 'INFO',
+    'DEPTH_LIMIT': 0
 }

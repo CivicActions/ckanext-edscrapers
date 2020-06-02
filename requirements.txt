@@ -49,6 +49,7 @@ pyhamcrest==2.0.2
 pyopenssl==19.1.0
 python-dateutil==2.8.1
 python-dotenv==0.12.0
+python-igraph==0.8.2
 python-slugify==4.0.0
 pytz==2019.3
 pyyaml==5.3.1
