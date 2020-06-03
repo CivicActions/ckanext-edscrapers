@@ -17,6 +17,10 @@ class Collection(Item):
     collection_url = Field()
     source = Field()
 
+class Publisher(Item):
+    name = Field()
+    subOrganizationOf = Field()
+
 
 class Dataset(Item):
 
