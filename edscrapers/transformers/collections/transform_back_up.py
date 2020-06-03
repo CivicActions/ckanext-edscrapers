@@ -8,18 +8,13 @@ All transformation output is written into 'collections' subdirectory of the
 """
 
 import os
-import sys
 import json
 from pathlib import Path
 import re
 from collections import Counter
-import hashlib
 
 from edscrapers.cli import logger
 from edscrapers.transformers.base import helpers as h
-from edscrapers.scrapers.base.graph import GraphWrapper
-
-import igraph
 
 
 OUTPUT_DIR = os.getenv('ED_OUTPUT_PATH') # get the output directory
@@ -30,36 +25,19 @@ CURRENT_TRANSFORMER_OUTPUT_DIR = h.get_output_path('collections')
 
 def transform(name=None, input_file=None):
     """
-    function is responsible for transforming raw datasets into Collections
+    function is responsible for transofrming raw datasets into Collections
     """
 
-    if not name: # user has not provided a scraper name to get collections with
-        logger.error('Scraper/Office name not provided. Cannot generate collections')
-        sys.exit(1)
+    if input_file is None: # no input file specified
+        file_list = h.traverse_output(name) # run through all the files in 'name' directory
+    else:
+        try:
+            with open(input_file, 'r') as fp:
+                file_list = [line.rstrip() for line in fp]
+        except:
+            logger.warning(f'Cannot read from list of output files at {input_file}, falling back to all collected data!')
+            file_list = h.traverse_output(name)
     
-    # load the Graph representing the scraped datasets
-    GraphWrapper.load_graph(file_dir_path=Path(OUTPUT_DIR, 'graphs', name),
-                            file_stem_name=name)
-    # get the loaded graph
-    graph = GraphWrapper.get_graph()
-
-    # identify cpllections within the graph
-    identify_collections_within_graph(graph)
-
-    # write the graph to files
-    # this method is explicitly thread/proccess safe, so no need for lock
-    GraphWrapper.write_graph(file_dir_path=Path(os.getenv('ED_OUTPUT_PATH'), 
-                                                        "graphs", f"{name}"),
-                                        file_stem_name=f'{name}.collections',
-                                        graph_width=2500, graph_height=2500)
-    # create the page legend file for this graph
-    GraphWrapper.create_graph_page_legend(file_dir_path=Path(os.getenv('ED_OUTPUT_PATH'), 
-                                                        "graphs", f"{name}"),
-                                         file_stem_name=f'{name}.collections')                                    
-    
-
-
-    """                                      
     collections_list = [] # holds the list of collections acquired from 'name' scraper directory
     # loop through filepath in file list
     for file_path in file_list:
@@ -84,57 +62,9 @@ def transform(name=None, input_file=None):
     h.write_file(file_output_path, collections_list)
     # write file the collections gotten from 'name' scraped out to S3 bucket
     h.upload_to_s3_if_configured(file_output_path, 
-                                 f'{(name or "all")}.collections.json') """
+                                 f'{(name or "all")}.collections.json')
 
 
-def identify_collections_within_graph(graph=GraphWrapper.graph):
-    """ method identifies AND flags/marks Collection vertices
-    within the provided graph. All updates are done inplace,
-    so the provided graph will be updated/modified after this process """
-
-    with graph.graph_lock:
-        # Step 1: identify Dataset Page vertices that have multiple Dataset vertices pointing to it
-        collection_vertex_seq1 = graph.vs.\
-             select(lambda vertex: vertex['datasets'] is not None and len(vertex['datasets']) > 1)
-        
-        # Step 2: identify Page vertices that have at least 2 other dataset Page vertices pointing to it
-        collection_vertex_seq2 = graph.vs.\
-             select(_outdegree_ge=2, 
-                   is_dataset_page_eq=None,
-                   is_dataset_eq=None,
-                   name_ne='base_vertex').\
-            select(lambda vertex: (True not in [s['is_dataset'] for s in vertex.successors()]) and ([True] * len(vertex.successors())) == [s['is_dataset_page'] for s in vertex.successors()]).\
-            select(lambda vertex: len(set(collection_vertex_seq1).intersection(set(vertex.successors()))) == 0)
-        
-        # Step 3: identify all predecessors of all the collections so far identified. 
-        # the successors of these predecessors are also collections
-        combined_col_seq = igraph.VertexSeq(graph, 
-        [vertex.index for vertex in set(list(collection_vertex_seq1) + list(collection_vertex_seq2))])
-        collection_vertex_seq3 = set()
-        for vertex in combined_col_seq:
-            for parent_vertex in vertex.predecessors():
-                if parent_vertex['name'] == 'base_vertex': # this is the start-point vertex, ignore it
-                    continue
-                collection_vertex_seq3.update(parent_vertex.successors())
-        
-        # END OF STPEPS USED TO IDENTIFY COLLECTIONS
-
-        # NOW combine all the identified collections
-        combined_col_seq = igraph.VertexSeq(graph, 
-        [vertex.index for vertex in set(list(collection_vertex_seq1) + list(collection_vertex_seq2) + list(collection_vertex_seq3))])
-        
-        # update the identified collection vertices to flag/mark them as collections
-        for collection_vertex in combined_col_seq:
-            collection_vertex['is_collection'] = True
-            collection_vertex['label']= f'C{collection_vertex.index}'
-            collection_vertex['color'] = 'green'
-            collection_vertex['collection_id'] = f'{hashlib.md5(collection_vertex["name"].encode("utf-8")).hexdigest()}-{hashlib.md5("all".encode("utf-8")).hexdigest()}'
-        
-        # return all identified collections as a Vertext_Seq
-        return combined_col_seq 
-
-
-# TODO THIS METHOD IS DEPRECATED. WILL REMOVE WHEN WE ARE SURE NO OTHER MDOULE RELIES ON IT
 def extract_collection_from(dataset: dict, use_key: str='collection') -> dict:
     """ function is used to extract a Collection from the provided dataset 
     

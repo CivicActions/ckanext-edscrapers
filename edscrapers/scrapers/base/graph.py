@@ -10,7 +10,12 @@ import pandas as pd
 
 class GraphWrapper():
     """ class provides the singleton
-    graph object to be used by a scraper or transformer """
+    graph object to be used by a scraper or transformer.
+
+    All methods in this class are designed to be thread/process safe.
+    However, when using the singleton graph object provided by this class,
+    ALWAYS access the graph object from within the
+    Lock object (conveniently) attached to the singleton graph object """
 
     graph = igraph.Graph(directed=True)
         
@@ -28,7 +33,9 @@ class GraphWrapper():
     @classmethod
     def get_graph(cls):
         """ returns the singleton graph object """
-        return cls.graph
+
+        with cls.graph_lock:
+            return cls.graph
 
     @classmethod
     def write_graph(cls, file_dir_path, file_stem_name,
@@ -36,17 +43,23 @@ class GraphWrapper():
                     vertex_size=32, font_size=26):
         """ write the graph to files """
 
+        # make the file directory if it doesn't already exist
         file_dir_path = Path(file_dir_path)
-        file_dir_path.mkdir(parents=True, exist_ok=True)
+        file_dir_path.mkdir(parents=True, exist_ok=True) 
+
+        # make a dated directory (for storing all the dated output)
+        dated_dir_path = Path(file_dir_path,
+                          f'{datetime.now().year}-{datetime.now().month:02d}-{datetime.now().day:02d}')
+        dated_dir_path.mkdir(parents=True, exist_ok=True)
 
         with cls.graph.graph_lock:
-            # destroy the lock object, so it's not pickled
+            # destroy access to the lock object, so it's not pickled
             del cls.graph.graph_lock
-            # write the graph to a dated file
-            cls.graph.write_pickle(fname=Path(file_dir_path, 
-            f'{datetime.now().year}-{datetime.now().month:02d}-{datetime.now().day:02d}.pickle'),
+            # write the graph to a dated file in the dated directory
+            cls.graph.write_pickle(fname=Path(dated_dir_path, 
+            f'{datetime.now().year}-{datetime.now().month:02d}-{datetime.now().day:02d}.{file_stem_name}.pickle'),
             version=4)
-            # write the graph to a general file
+            # write the graph to a general file in 'file_dir_path'
             # this general file will ALWAYS hold the latest graph
             cls.graph.write_pickle(fname=Path(file_dir_path, 
             f'{file_stem_name}.pickle'),
@@ -61,6 +74,7 @@ class GraphWrapper():
             
             #reinstate the previously destroyed process lock since pickling is complete
             cls.graph.graph_lock = cls.graph_lock
+
     
     @classmethod
     def create_graph_page_legend(cls, file_dir_path, file_stem_name):
@@ -82,3 +96,19 @@ class GraphWrapper():
             df.to_csv(Path(file_dir_path, f'{file_stem_name}_page_legend.csv'),
                       columns=['Page Label', 'Page Title', 'Page URL'],
                       header=True, index=False)
+
+    @classmethod
+    def load_graph(cls, file_dir_path, file_stem_name):
+        """ loads a graph from file into the singleton Graph object for this class """
+
+
+        with cls.graph_lock:
+            # destroy access to the lock object, so the
+            # old graph object can be easily garbage collected
+            del cls.graph.graph_lock
+            # load the new graph object from the provided file
+            cls.graph = igraph.Graph.Read_Pickle(fname=Path(file_dir_path, 
+            f'{file_stem_name}.pickle'))
+            # attach the Lock object to the newly loaded graph object
+            cls.graph.graph_lock = cls.graph_lock
+

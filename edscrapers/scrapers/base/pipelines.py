@@ -10,9 +10,6 @@ from scrapy.exceptions import DropItem
 from edscrapers.cli import logger
 from edscrapers.scrapers.base.graph import GraphWrapper
 
-import multiprocessing as mp
-import igraph
-
 
 
 class JsonWriterPipeline(object):
@@ -82,11 +79,21 @@ class GraphItemPipeline:
             
 
     def process_item(self, dataset, spider):
-        # find the vertex page that represents this dataset
+        
         with spider.scraper_graph.graph_lock:
+
+            # check if this dataset already exist, i.e. is this somehow a duplicate scrape of the dataset
+            try:
+                spider.scraper_graph.vs.find(name=dataset['saved_as_file'])
+                # if no error, it means this dataset vertex already exist, so exit method
+                return dataset
+            except ValueError: # if error it means this dataset vertex does NOT previously exists, so proceed
+                pass
+            
+            # find the vertex page that represents this dataset
             parent_vertex = spider.scraper_graph.vs.find(name=dataset['source_url'])
 
-            # check if the vertex has an attribute to track if its a dataset page or not
+            # check if the parent_vertex has an attribute to track if its a dataset page or not
             if 'is_dataset_page' not in parent_vertex.attribute_names() or parent_vertex['is_dataset_page'] is None: # no attribute set
                 parent_vertex['is_dataset_page'] = True
                 parent_vertex['datasets'] = set()
