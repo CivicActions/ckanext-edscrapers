@@ -11,7 +11,7 @@ import edscrapers.scrapers.base.parser as base_parser
 from edscrapers.scrapers.base.models import Dataset, Resource
 
 
-def parse(res) -> dict:
+def parse(res, publisher) -> dict:
     """ function parses content to create a dataset model """
 
     # create parser object
@@ -45,11 +45,7 @@ def parse(res) -> dict:
 
         # replace all non-word characters (e.g. ?/) with '-'
         dataset['name'] = slugify(dataset['title'])
-        if soup_parser.head.find(name='meta', attrs={'name': 'ED.office'}) is None:
-            dataset['publisher'] = __package__.split('.')[-2]
-        else:
-            dataset['publisher'] = soup_parser.head.\
-                                find(name='meta', attrs={'name': 'ED.office'})['content']
+        dataset['publisher'] = publisher
         
         if soup_parser.head.find(name='meta', attrs={'name': 'DC.description'}) is None:
             dataset['notes'] = dataset['title']
