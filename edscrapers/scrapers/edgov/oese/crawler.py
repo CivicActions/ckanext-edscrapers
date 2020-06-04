@@ -5,7 +5,7 @@ from scrapy.spiders import Rule
 from scrapy.spiders import CrawlSpider
 from scrapy.linkextractors import LinkExtractor
 
-from edscrapers.scrapers.oese.parser import parse
+from edscrapers.scrapers.edgov.oese.parser import parse
 
 
 class Crawler(CrawlSpider):
