@@ -9,7 +9,7 @@ import edscrapers.scrapers.base.parser as base_parser
 from edscrapers.scrapers.base.models import Dataset, Resource
 
 
-def parse(res):
+def parse(res, publisher):
     """ function parses content to create a dataset model """
 
     # ensure that the response text gotten is a string
@@ -50,13 +50,7 @@ def parse(res):
 
         # name
         dataset['name'] = slugify(dataset['title'])
-        
-        # publisher
-        if soup_parser.head.find(name='meta', attrs={'name': 'ED.office'}) is None:
-            dataset['publisher'] = __package__.split('.')[-2]
-        else:
-            dataset['publisher'] = soup_parser.head.\
-                                find(name='meta', attrs={'name': 'ED.office'})['content']
+        dataset['publisher'] = publisher
         
         # description
         if soup_parser.head.find(name='meta', attrs={'name': 'DC.description'}) is None:
