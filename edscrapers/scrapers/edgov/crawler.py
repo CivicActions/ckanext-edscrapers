@@ -13,8 +13,8 @@ class Crawler(CrawlSpider):
 
     name = 'edgov'
 
-    # allowed_regex = r'^http.*://[w2\.]*ed\.gov/.*$'
-    allowed_domains = ['ed.gov', 'www2.ed.gov']
+    allowed_regex = r'^http.*://[w2\.]*ed\.gov/.*$'
+    # allowed_domains = ['ed.gov', 'www2.ed.gov']
 
     def __init__(self):
 
@@ -24,13 +24,16 @@ class Crawler(CrawlSpider):
             'https://www2.ed.gov/about/offices/list/index.html'
         ]
 
+        extensions_to_avoid = []
+        for ext in [h.get_data_extensions(), h.get_document_extensions(), h.get_avoidable_extensions()]:
+            extensions_to_avoid.extend(ext.keys())
+
         # Make rules
         self.rules = [
             Rule(LinkExtractor(
-                #allow=self.allowed_regex,
-                deny_extensions=[regex[1:] for regex in h.get_data_extensions().keys()],
+                allow=self.allowed_regex,
+                deny_extensions=[ext[1:] for ext in extensions_to_avoid],
                 deny_domains=h.retrieve_crawlers_allowed_domains(except_crawlers=['edgov'])
-                #restrict_xpaths='//*[@id="maincontent"]',
             ), callback=parse, follow=True),
         ]
 
