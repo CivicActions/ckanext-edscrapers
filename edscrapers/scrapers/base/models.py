@@ -29,7 +29,6 @@ class Dataset(Item):
     title = Field()
     name = Field()
     notes = Field()
-    publisher = Field()
     date = Field()
     contact_person_name = Field()
     contact_person_email = Field()
@@ -38,6 +37,7 @@ class Dataset(Item):
     resources = Field()
     collection = Field()
     saved_as_file = Field()
+    publisher = Field()
 
     def toJSON(self):
         # dont convert the collection field to JSON

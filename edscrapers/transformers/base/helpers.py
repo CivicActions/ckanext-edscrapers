@@ -134,7 +134,10 @@ def traverse_output(target=None):
     if target is None:
         results = Path(os.path.join(OUTPUT_DIR, 'scrapers')).rglob('*.json')
     else:
-        results = Path(os.path.join(OUTPUT_DIR, 'scrapers', target)).glob('**/*.json')
+        if target in ['oese', 'osers', 'oela', 'octae', 'ope', 'opepd']:
+            results = Path(os.path.join(OUTPUT_DIR, 'scrapers', 'edgov', target)).glob('**/*.json')
+        else:
+            results = Path(os.path.join(OUTPUT_DIR, 'scrapers', target)).glob('**/*.json')
 
     files_list = [f for f in results
                   if 'print' not in str(f).split('/')[-1].split('-')]

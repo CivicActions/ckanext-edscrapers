@@ -154,7 +154,13 @@ def _transform_scraped_dataset(data: dict, target_dept='all'):
         dataset.modified = data.get('date')
 
     publisher = Organization()
-    publisher.name = h.get_office_name(target_dept)
+    if type(data.get('publisher')) is dict:
+        publisher.name = data.get('publisher', {'name': 'edgov'})['name']
+        publisher.sub_organization_of = data.get('publisher', {}).get('subOrganizationOf', None)
+    else:
+        # if no publisher present, use the target_dept - part after last dot, if applicable
+        # (e.g. both "oese" and "edgov.oese" will yield "oese")
+        publisher.name = data.get('publisher', target_dept.split('.')[-1])
     dataset.publisher = publisher
 
     contactPoint = {
