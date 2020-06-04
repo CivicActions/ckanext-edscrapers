@@ -24,7 +24,7 @@ class Organization():
         }
 
         if self.sub_organization_of is not None:
-            org_dict["subOrganizationOf"] = self.sub_organization_of.to_dict()
+            org_dict["subOrganizationOf"] = self.sub_organization_of
 
         return org_dict
 
