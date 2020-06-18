@@ -96,7 +96,7 @@ def transform(name=None, input_file=None, use_raw_datasets=False) -> pd.DataFram
         for file_path in file_list:
             # read json from file using helper function
             data = h.read_file(file_path)
-            for dataset_dict in data['dataset']: # loop through the datasets contained in data
+            for dataset_dict in data.get('dataset', []): # loop through the datasets contained in data
                 # compute the weighted score of the dataset
                 compute_score(dataset_dict, append_score=True, use_raw_datasets=False)
                 datasets_list.append(dataset_dict)

@@ -111,7 +111,7 @@ def get_meta_value(soup, meta_name):
                   period=RATE_LIMIT_WINDOW) # apply rate-limit throttling
 def get_resource_headers(source_url, url):
     headers = dict()
-    return headers
+    #return headers
     if urlparse(url).scheme:
         raw_headers = requests.head(url).headers
     else:

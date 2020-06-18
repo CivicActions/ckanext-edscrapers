@@ -178,7 +178,13 @@ def _transform_scraped_dataset(data: dict, target_dept='all'):
     if data.get('contact_person_email'):
         contactPoint['hasEmail'] = "mailto:" + data.get('contact_person_email')
     else:
-        contactPoint['hasEmail'] = f'mailto:{target_dept}@ed.gov'
+        if target_dept == 'edgov':
+            try:
+                contactPoint['hasEmail'] = f"mailto:{data['publisher']['name']}@ed.gov"
+            except Exception as e:
+                contactPoint['hasEmail'] = f"mailto:{data['publisher']}@ed.gov"
+        else:
+            contactPoint['hasEmail'] = f'mailto:{target_dept}@ed.gov'
 
     dataset.contactPoint = contactPoint
 
@@ -202,20 +208,23 @@ def _transform_scraped_dataset(data: dict, target_dept='all'):
 
     dataset.distribution = distributions
 
-    # get the 'source' attribute for the dataset object
-    dataset_source = _transform_scraped_source(data)
-    if dataset_source:
-        dataset.source.append(dataset_source)
-    
-    # get the 'collection' attribute for the dataset object
-    dataset_collection = _transform_scraped_collection(data)
-    if dataset_collection:
-        dataset.collection.append(dataset_collection)
-    
     # get levelOfData
     if data.get('level_of_data', None):
         dataset.levelOfData = data.get('level_of_data')
 
+    if data.get('collection'):
+        # get the 'source' attribute for the dataset object
+        for collection in data.get('collection', []):
+            dataset_source = _transform_scraped_source(dict(collection=collection))
+            if len(dataset_source) > 0:
+                dataset.source.extend(dataset_source)
+    
+        # get the 'collection' attribute for the dataset object
+        for collection in data.get('collection', []):
+            dataset_collection = _transform_scraped_collection(dict(collection=collection))
+            if dataset_collection:
+                dataset.collection.append(dataset_collection)
+    
     return dataset
 
 def _transform_scraped_resource(target_dept, resource):
@@ -262,27 +271,14 @@ def _transform_scraped_source(data: dict):
     function returns the Source object from raw data provided
     """
 
-    source = None
-    try:
-        if data.get('collection', None) and data['collection'].get('source', None):
-            source = Source()
-            source.id = data['collection']['source'].get('source_id')
-            source.title = data['collection']['source'].get('source_title')
-            source.url = data['collection']['source'].get('source_url')
-    except:
-        for collection in data.get('collection', []):
-            if collection.get('source', None):
-                try:
-                    source = Source()
-                    source.id = collection['source'].get('source_id')
-                    source.title = collection['source'].get('source_title')
-                    source.url = collection['source'].get('source_url')
-                except:
-                    for src in collection['source']:
-                        source = Source()
-                        source.id = src.get('source_id')
-                        source.title = src.get('source_title')
-                        source.url = src.get('source_url')
+    source = []
+    if data.get('collection', None) and data['collection'].get('source', None):
+        for collection_source in data['collection']['source']:
+            a_source = Source()
+            a_source.id = collection_source['source_id']
+            a_source.title = collection_source['source_title']
+            a_source.url = collection_source['source_url']
+            source.append(a_source)
     
     return source
 
@@ -298,13 +294,13 @@ def _transform_scraped_collection(data: dict):
         collection.id = data['collection'].get('collection_id')
         collection.title = data['collection'].get('collection_title')
         collection.url = data['collection'].get('collection_url')
-        
-        source = None
+
+        source = []
         # get a Source object from the raw data
         source = _transform_scraped_source(data)
-        if source:
-            collection.sources.append(source)
-    
+        if len(source) > 0:
+            collection.sources.extend(source)
+
     return collection
 
 def _transform_preprocessed_sources(sources_list: list):

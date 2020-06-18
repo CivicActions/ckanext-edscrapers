@@ -39,7 +39,7 @@ class GraphWrapper():
 
     @classmethod
     def write_graph(cls, file_dir_path, file_stem_name,
-                    graph_width=1200, graph_height=1200,
+                    graph_width=2800, graph_height=2800,
                     vertex_size=32, font_size=26):
         """ write the graph to files """
 

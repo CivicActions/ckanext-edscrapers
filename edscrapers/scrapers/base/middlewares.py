@@ -25,13 +25,15 @@ class GraphMiddleWare():
     def process_spider_input(self, response, spider):
 
         # ensure that the response text gotten is a string
-        if not isinstance(getattr(response, 'text', None), str):
-            raise TypeError("invalid response type gotten. Expected 'str' type")
+        #if not isinstance(getattr(response, 'text', None), str):
+        #    raise TypeError("invalid response type gotten. Expected 'str' type")
 
         try:
             soup_parser = bs4.BeautifulSoup(response.text, 'html5lib')
         except Exception as exc:
-            raise exc
+            response_text = '<html><head><title>[no title]</title></head><body></body></html>'
+            soup_parser = bs4.BeautifulSoup(response_text, 'html5lib')
+            #raise exc
 
         current_vertex = None # holds the current vertex which represents the current Response
         

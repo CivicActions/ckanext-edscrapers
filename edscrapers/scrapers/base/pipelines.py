@@ -35,14 +35,18 @@ class JsonWriterPipeline(object):
             Path(f"{os.getenv('ED_OUTPUT_PATH')}/scrapers/{spider.name}/{name}").mkdir(parents=True, exist_ok=True)
             file_path = f"{os.getenv('ED_OUTPUT_PATH')}/scrapers/{spider.name}/{name}/{file_name}"
         else:
-            file_path = f"{os.getenv('ED_OUTPUT_PATH')}/scrapers/{spider.name}/{file_name}"
+            if spider.name in ['oese', 'osers', 'oela', 'octae', 'ope', 'opepd']:
+                Path(f"{os.getenv('ED_OUTPUT_PATH')}/scrapers/edgov/{spider.name}").mkdir(parents=True, exist_ok=True)
+                file_path = f"{os.getenv('ED_OUTPUT_PATH')}/scrapers/edgov/{spider.name}/{file_name}"
+            else:
+                file_path = f"{os.getenv('ED_OUTPUT_PATH')}/scrapers/{spider.name}/{file_name}"
         self._log(dataset)
         logger.debug(f"Dumping to {file_path}")
         with open(file_path, 'w') as output:
             output.write(dataset.toJSON())
         
         # add this attribute so that the saved (relative) location of datasets can be tracked
-        dataset['saved_as_file'] = f"scrapers/{spider.name}/{file_name}"
+        dataset['saved_as_file'] = file_path[file_path.find("/scrapers/")+1 : ]
 
         return dataset # return the dataset
 
@@ -76,8 +80,7 @@ class GraphItemPipeline:
         # this method is explicitly thread/proccess safe, so no need for lock
         GraphWrapper.write_graph(file_dir_path=Path(os.getenv('ED_OUTPUT_PATH'), 
                                                             "graphs", f"{spider.name}"),
-                                         file_stem_name=spider.name,
-                                         graph_width=2500, graph_height=2500)
+                                         file_stem_name=spider.name)
         
         # create the page legend file for this graph
         # this method is explicitly thread/proccess safe, so no need for lock

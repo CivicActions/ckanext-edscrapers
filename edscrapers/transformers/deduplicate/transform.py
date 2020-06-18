@@ -42,7 +42,10 @@ class Transformer():
     def _make_list(self, key):
         for f in self.file_list:
             with open(f, 'r') as fp:
-                j = json.loads(fp.read())
+                try:
+                    j = json.loads(fp.read())
+                except Exception as e:
+                    logger.warning(f'Failed to parse file {f} as JSON!')
                 if '/print/' in j.get(key):
                     continue
                 # In order to deduplicate with dicts, we need to normalize all keys
