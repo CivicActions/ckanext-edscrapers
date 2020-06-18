@@ -3,10 +3,12 @@
 import os
 import json
 from pathlib import Path
+import urllib
 import re
 
 from edscrapers.cli import logger
 from edscrapers.transformers.base import helpers as h
+from edscrapers.transformers.sanitize.helpers import categories as group_map
 
 
 OUTPUT_DIR = os.getenv('ED_OUTPUT_PATH') # get the output directory
@@ -44,9 +46,12 @@ def transform(name=None, input_file=None):
         # set the 'level of data' for the dataset
         data = _set_dataset_level_of_data(data)
 
+        # assign the dataset to groups
+        # according to https://www2.ed.gov/rschstat/catalog/index.html
+        data = _set_dataset_groups(data)
+
         # write modified dataset back to file
         h.write_file(file_path, data)
-
 
 
 def _mark_private(dataset: dict, search_words=[], add_word_tag=True,
@@ -226,4 +231,50 @@ def _set_dataset_level_of_data(dataset: dict) -> dict:
     else: # else no keys
         del dataset['_clean_data'] # delete '_clean_data' key from dataset
     
+    return dataset
+
+
+def _set_dataset_groups(dataset: dict) -> dict:
+    """ private helper function.
+    FUNCTION ONLY adds/modifies the '_clean_data' key of 'dataset' during operations.
+    
+    function sets the 'groups' for the dataset.
+    
+    groups are collected from a mapping, produced following the structure
+    in this page: https://www2.ed.gov/rschstat/catalog/index.html
+    """
+
+    def find_groups(url):
+        """returns a set of group names, if applicable"""
+        groups = []
+        keys = group_map.keys()
+        for key in keys:
+            for base_url in group_map[key]:
+                if base_url in url:
+                    # print(f'Found: {base_url} in {url} for {key}')
+                    groups.append(key)
+                # else:
+                #     print(f'Not found: {base_url} in {url} for {key}')
+        return groups
+
+    # get the '_clean_data' key of dataset
+    clean_data = dataset.setdefault('_clean_data', {})
+    groups = dataset.get('groups', [])
+    new_groups = None
+
+    if dataset.get('resources'):
+        for resource in dataset['resources']:
+            url = urllib.parse.urljoin(resource['source_url'], resource['url'])
+            new_groups = find_groups(url)
+            if new_groups:
+                groups.extend(new_groups)
+
+    if new_groups:
+        clean_data['groups'] = list(set(groups))
+
+    if len(clean_data.keys()) > 0: # if 'clean_data' has keys
+        dataset['_clean_data'] = clean_data # update dataset
+    else: # else no keys
+        del dataset['_clean_data'] # delete '_clean_data' key from dataset
+
     return dataset

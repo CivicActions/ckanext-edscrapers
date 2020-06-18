@@ -144,6 +144,9 @@ def _transform_scraped_dataset(data: dict, target_dept='all'):
     dataset.identifier = identifier
     dataset_identifier_list.append(identifier)
 
+    if data.get('groups'):
+        dataset.theme = data.get('groups')
+
     if data.get('tags'):
         dataset.keyword = h.transform_keywords(data.get('tags'))
     
