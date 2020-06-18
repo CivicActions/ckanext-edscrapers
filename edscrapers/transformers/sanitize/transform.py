@@ -284,7 +284,13 @@ def _set_dataset_groups(dataset: dict) -> dict:
     if new_groups:
         clean_data['groups'] = list(set(groups))
 
-    if len(clean_data.keys()) > 0: # if 'clean_data' has keys
+    if len(clean_data.keys()) > 0: # if '_clean_data' has keys
+        dataset['_clean_data'] = clean_data # update dataset
+    else: # else no keys
+        del dataset['_clean_data'] # delete '_clean_data' key from dataset
+
+    return dataset
+
 
 def _remove_old_sources_collections(dataset: dict) -> dict:
     """ private helper function.
