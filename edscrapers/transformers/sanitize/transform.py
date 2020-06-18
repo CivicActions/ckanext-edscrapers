@@ -49,7 +49,10 @@ def transform(name=None, input_file=None):
         # assign the dataset to groups
         # according to https://www2.ed.gov/rschstat/catalog/index.html
         data = _set_dataset_groups(data)
-
+      
+        # remove the old format for collections / sourcs
+        data = _remove_old_sources_collections(data)
+        
         # write modified dataset back to file
         h.write_file(file_path, data)
 
@@ -131,6 +134,15 @@ def _remove_dataset(dataset: dict, search_words=[]) -> dict:
             # word is in title, so flag datset for removal/deletion
             clean_data['_remove_dataset'] = True
             break # exit foor loop since dataset has been marked
+
+    # Temporary fix for removing the 'edgov' datasets from the resulting datajson file
+    # FIXME set this to True once parsing / sanitizing for the publisher is improved
+    try:
+        if dataset['publisher'].get('name') == 'edgov':
+            clean_data['_remove_dataset'] = True
+    except:
+        if dataset['publisher'] == 'edgov':
+            clean_data['_remove_dataset'] = True
 
     if len(clean_data.keys()) > 0: # if '_clean_data' has keys
         dataset['_clean_data'] = clean_data # update dataset
@@ -273,6 +285,28 @@ def _set_dataset_groups(dataset: dict) -> dict:
         clean_data['groups'] = list(set(groups))
 
     if len(clean_data.keys()) > 0: # if 'clean_data' has keys
+
+def _remove_old_sources_collections(dataset: dict) -> dict:
+    """ private helper function.
+    removes sources and collections that were produced by earlier
+    implementations of their respective transformers"""
+
+    if dataset.get('collection') is None or dataset.get('source'):
+        return dataset
+
+    # get the '_clean_data' key of dataset
+    clean_data = dataset.setdefault('_clean_data', {})
+    # get the title key from clean_data or use those from dataset
+    collection = clean_data.get('collection', dataset.get('collection', []))
+    # get the tags key from clean_data or use those from dataset
+    source = clean_data.get('source', dataset.get('source', []))
+
+    if type(collection) == dict:
+        clean_data['collection'] = None
+    if type(source) == dict:
+        clean_data['source'] = None
+
+    if len(clean_data.keys()) > 0: # if '_clean_data' has keys
         dataset['_clean_data'] = clean_data # update dataset
     else: # else no keys
         del dataset['_clean_data'] # delete '_clean_data' key from dataset
